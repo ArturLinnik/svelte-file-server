@@ -9,9 +9,6 @@
     const endpoint = "http://localhost:2222";
     const uploadEndpoint = `${endpoint}/upload`;
 
-    let fileVar;
-    let uploadFiles;
-
     let files;
     let filesInfo: Array<{ name: string; is_dir: boolean; size: number; mod_time: Date }> = [];
     $: currPath = "";
@@ -22,7 +19,6 @@
 
     async function getFiles(filename: string) {
         let path = `${endpoint}/${currPath}/${filename}`;
-        // const response = await fetch(`${endpoint}/${path}`);
         const response = await fetch(path);
 
         if (response.headers.get("Content-Type") != "application/json") {
@@ -40,97 +36,34 @@
         link.href = `${endpoint}/${currPath}/${filename}`;
         link.download = `${filename}`;
         link.click();
-
-        // let newPath = `${currPath}/${filename}`;
-        // await fetch(`${endpoint}/${newPath}`)
-        //     .then((resp) => resp.blob())
-        //     .then((blob) => {
-        //         const url = window.URL.createObjectURL(blob);
-        //         // console.log(url);
-        //         const a = document.createElement("a");
-        //         a.style.display = "none";
-        //         a.href = url;
-        //         // the filename you want
-        //         a.download = `${filename}`;
-        //         document.body.appendChild(a);
-        //         a.click();
-        //         window.URL.revokeObjectURL(url);
-        //     })
-        //     .catch(() => alert("Error on download..."));
     }
 
     async function downloadDirectory(filename: string) {
-        // pass parameter as: .../path?download
-        // let path = `${currPath}/${filename}`;
-        // console.log(path);
-
-        // let response = await fetch(`${endpoint}/${currPath}?download=${filename}`);
-        // console.log(await response.blob());
         const link = document.createElement("a");
         link.href = `${endpoint}/${currPath}?download=${filename}`;
         link.download = `${filename}.zip`;
         link.click();
-        // link.dispatchEvent(new MouseEvent("click"));
-
-        // await fetch(`${endpoint}/${currPath}?download=${filename}`)
-        //     .then((resp) => resp.blob())
-        //     .then((blob) => {
-        //         const url = window.URL.createObjectURL(blob);
-        //         console.log(url);
-        //         const a = document.createElement("a");
-        //         a.style.display = "none";
-        //         a.href = url;
-        //         a.download = `${filename}.zip`;
-        //         document.body.appendChild(a);
-        //         a.click();
-        //         window.URL.revokeObjectURL(url);
-        //     })
-        //     .catch(() => alert("Error on download..."));
-
-        // await fetch(`${endpoint}/${path}?download`);
     }
-
-    // function openFile(path: string) {
-    //     // e.stopPropagation();
-    //     let newPath = `${currPath}/${path}`;
-    //     // let file = `${endpoint}/${newPath}`;
-    //     // window.open(`${endpoint}/${newPath}`, "_blank").focus();
-    //     window.open(`${endpoint}/${newPath}`, "_blank");
-    //     // return 0;
-    // }
-
-    // async function uploadFile(e: SubmitEvent, filename: string) {
-    // async function uploadFile(e: SubmitEvent) {
-    //     // const formData = new FormData(e.target as HTMLFormElement)
-    //     // let path = `${endpoint}/upload`;
-    //     // let response = await fetch(path, { method: "POST", body: JSON.stringify(`${currPath}/${filename}`) });
-    //     // console.log(response.text());
-    //     console.log("hello");
-    // }
 
     function submitForm() {
         const dataArray = new FormData();
-        // dataArray.append("file", fileVar);
         dataArray.append("uploadF", files[0]);
         fetch(`${endpoint}/upload`, {
             method: "POST",
             body: dataArray
         })
             .then((response) => {
-                // Successfully uploaded
-                console.log("SUCCESS POSTING");
+                alert("SUCCESS POSTING");
                 console.log(response.text());
             })
             .catch((error) => {
-                // Upload failed
+                console.log(error);
             });
     }
 
     let upFiles;
 
     $: if (upFiles) {
-        // Note that `files` is of type `FileList`, not an Array:
-        // https://developer.mozilla.org/en-US/docs/Web/API/FileList
         console.log(upFiles);
 
         for (const file of upFiles) {
@@ -138,35 +71,17 @@
         }
     }
 
-    // const onFileSelected = (e) => {
-    //     let image = e.target.files[0];
-    //     let reader = new FileReader();
-    //     reader.readAsDataURL(image);
-    //     reader.onload = (e) => {
-    //         avatar = e.target.result;
-    //     };
-    // };
-
     $: fileUploadName = "";
     function openFileBrowser() {
         let fileInput = document.getElementById("my_file");
         fileInput.click();
-        // fileUploadName = fileInput[0].name;
-        // document.getElementById("my_file").click();
     }
 
     function clickSubmit() {
         document.getElementById("my-submit").click();
     }
 
-    // function getFileUploadName() {
-    //     let fileInput = document.getElementById("my_file");
-    //     fileUploadName = fileInput[0].name;
-    //     // let filename = fileInput.files[0].name;
-    // }
-
     function selectFile() {
-        // alert("Selected file: " + this.value);
         fileUploadName = files[0].name;
     }
 </script>
@@ -177,67 +92,20 @@
 <main style="margin: auto; width: 50%;">
     <h3 style="color: black; width: max-content;">{currPath}</h3>
     <Card padded class="wrapper">
-        <!-- <form enctype="multipart/form-data" action={uploadEndpoint} method="post"> -->
-        <!-- <form on:submit|preventDefault={submitForm}>
-            <input type="file" bind:files={fileVar} name="file" />
-            <br />
-            <input type="submit" />
-        </form> -->
         <form on:submit|preventDefault={submitForm}>
-            <!-- <label for="avatar">Upload a picture:</label> -->
-            <!-- <input accept="image/png, image/jpeg" bind:files id="avatar" name="avatar" type="file" /> -->
             <div class="upload">
                 <div>
                     <Button color="secondary" variant="outlined" class="browse-button" on:click={() => openFileBrowser()}>BROWSE...</Button>
                     <label for="my_file">{fileUploadName}</label>
                 </div>
-                <!-- <label for="my_file">{upFiles.name}</label> -->
                 <Button color="secondary" variant="raised" class="upload-button" on:click={() => clickSubmit()}>UPLOAD</Button>
             </div>
-            <!-- <Button bind:files type="file">BROWSE</Button> -->
-            <!-- <Button> -->
-            <!-- BROWSE... -->
-            <!-- <input bind:files type="file" hidden /> -->
-            <!-- </Button> -->
             <input id="my_file" bind:files type="file" hidden on:change={selectFile} />
-            <!-- <label for="file-upload" class="custom-file-upload"> -->
-            <!-- hola -->
-            <!-- <Button color="secondary" variant="outlined" class="upload">BROWSE...</Button> -->
-            <!-- <input id="file-upload" bind:files type="file" /> -->
-            <!-- </label> -->
-
-            <!-- <input bind:files type="file" /> -->
             <input id="my-submit" type="submit" hidden />
         </form>
-        <!-- <form on:submit|preventDefault={submitForm}>
-            {#if avatar}
-                <img class="avatar" src={avatar} alt="d" />
-            {:else}
-                <img class="avatar" src="https://cdn4.iconfinder.com/data/icons/small-n-flat/24/user-alt-512.png" alt="" />
-            {/if}
-            <img
-                class="upload"
-                src="https://static.thenounproject.com/png/625182-200.png"
-                alt=""
-                on:click={() => {
-                    fileinput.click();
-                }}
-            />
-            <div
-                class="chan"
-                on:click={() => {
-                    fileinput.click();
-                }}
-            >
-                Choose Image
-            </div>
-            <input style="display:none" type="file" accept=".jpg, .jpeg, .png" on:change={(e) => onFileSelected(e)} bind:this={fileinput} name="uploadF" />
-            <input type="submit" />
-        </form> -->
         <DataTable table$aria-label="Files list" class="datatable">
             <Head>
                 <Row>
-                    <!-- <Cell class="min" style="align-items: center" /> -->
                     <Cell>
                         {#if currPath != ""}
                             <Icon class="material-symbols-outlined clickable" on:click={() => getFiles("..")}>arrow_back</Icon>
@@ -250,9 +118,6 @@
                 </Row>
             </Head>
             <Body>
-                <!-- {#if currPath != "."}
-                    <Row class="clickable" on:click={() => getFiles("..")}><Cell /><Cell>../</Cell><Cell /><Cell /></Row>
-                {/if} -->
                 {#if filesInfo != null}
                     {#each filesInfo as file}
                         <Row class="clickable" on:click={() => getFiles(file.name)}>
