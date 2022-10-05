@@ -7,47 +7,54 @@
     import { onMount } from "svelte";
 
     const endpoint = "http://localhost:2222";
-    const uploadEndpoint = `${endpoint}/upload`;
 
     let files;
     let filesInfo: Array<{ name: string; is_dir: boolean; size: number; mod_time: Date }> = [];
-    $: currPath = "";
+    $: currentPath = "";
+    $: fileUploadName = "";
 
     onMount(async function () {
         await getFiles("");
     });
 
     async function getFiles(filename: string) {
-        let path = `${endpoint}/${currPath}/${filename}`;
+        let path = `${endpoint}/${currentPath}/${filename}`;
         const response = await fetch(path);
 
+        // Get directory
         if (response.headers.get("Content-Type") != "application/json") {
             window.open(path);
-        } else {
+        }
+        // Get file
+        else {
             const data = await response.json();
             filesInfo = data.files;
-            currPath = data.path;
-            console.log(currPath);
+            currentPath = data.path;
+            console.log(currentPath);
         }
     }
 
-    async function downloadFile(filename: string) {
+    async function download(file: typeof filesInfo[0]) {
         const link = document.createElement("a");
-        link.href = `${endpoint}/${currPath}/${filename}`;
-        link.download = `${filename}`;
-        link.click();
-    }
 
-    async function downloadDirectory(filename: string) {
-        const link = document.createElement("a");
-        link.href = `${endpoint}/${currPath}?download=${filename}`;
-        link.download = `${filename}.zip`;
+        // Download file
+        if (!file.is_dir) {
+            link.href = `${endpoint}/${currentPath}/${file.name}`;
+            link.download = `${file.name}`;
+        }
+        // Download directory
+        else {
+            link.href = `${endpoint}/${currentPath}?download=${file.name}`;
+            link.download = `${file.name}.zip`;
+        }
+
         link.click();
     }
 
     function submitForm() {
         const dataArray = new FormData();
-        dataArray.append("uploadF", files[0]);
+        dataArray.append("path", currentPath);
+        dataArray.append("upload-file", files[0]);
         fetch(`${endpoint}/upload`, {
             method: "POST",
             body: dataArray
@@ -55,30 +62,16 @@
             .then((response) => {
                 alert("SUCCESS POSTING");
                 console.log(response.text());
+                getFiles("");
             })
             .catch((error) => {
                 console.log(error);
             });
     }
 
-    let upFiles;
-
-    $: if (upFiles) {
-        console.log(upFiles);
-
-        for (const file of upFiles) {
-            console.log(`${file.name}: ${file.size} bytes`);
-        }
-    }
-
-    $: fileUploadName = "";
     function openFileBrowser() {
-        let fileInput = document.getElementById("my_file");
+        let fileInput = document.getElementById("browse-file");
         fileInput.click();
-    }
-
-    function clickSubmit() {
-        document.getElementById("my-submit").click();
     }
 
     function selectFile() {
@@ -90,24 +83,24 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 
 <main style="margin: auto; width: 50%;">
-    <h3 style="color: black; width: max-content;">{currPath}</h3>
+    <h3 style="color: black; width: max-content;">{currentPath}</h3>
     <Card padded class="wrapper">
         <form on:submit|preventDefault={submitForm}>
             <div class="upload">
                 <div>
                     <Button color="secondary" variant="outlined" class="browse-button" on:click={() => openFileBrowser()}>BROWSE...</Button>
-                    <label for="my_file">{fileUploadName}</label>
+                    <label for="browse-file">{fileUploadName}</label>
                 </div>
-                <Button color="secondary" variant="raised" class="upload-button" on:click={() => clickSubmit()}>UPLOAD</Button>
+                <Button color="secondary" variant="raised" class="upload-button">UPLOAD</Button>
             </div>
-            <input id="my_file" bind:files type="file" hidden on:change={selectFile} />
-            <input id="my-submit" type="submit" hidden />
+            <input id="browse-file" bind:files type="file" hidden on:change={selectFile} />
+            <input id="upload-file" type="submit" hidden />
         </form>
         <DataTable table$aria-label="Files list" class="datatable">
             <Head>
                 <Row>
                     <Cell>
-                        {#if currPath != ""}
+                        {#if currentPath != ""}
                             <Icon class="material-symbols-outlined clickable" on:click={() => getFiles("..")}>arrow_back</Icon>
                         {/if}
                     </Cell>
@@ -131,23 +124,19 @@
                             <Cell>{(file.size / 1024).toFixed(2)} KB</Cell>
                             <Cell>{file.mod_time}</Cell>
                             <Cell>
-                                {#if !file.is_dir}
-                                    <IconButton
-                                        class="material-symbols-outlined"
-                                        on:click={(e) => {
-                                            e.stopPropagation();
-                                            downloadFile(file.name);
-                                        }}>file_download</IconButton
-                                    >
-                                {:else}
-                                    <IconButton
-                                        class="material-symbols-outlined"
-                                        on:click={(e) => {
-                                            e.stopPropagation();
-                                            downloadDirectory(file.name);
-                                        }}>system_update_alt</IconButton
-                                    >
-                                {/if}
+                                <IconButton
+                                    class="material-symbols-outlined"
+                                    on:click={(e) => {
+                                        e.stopPropagation();
+                                        download(file);
+                                    }}
+                                >
+                                    {#if file.is_dir}
+                                        system_update_alt
+                                    {:else}
+                                        file_download
+                                    {/if}
+                                </IconButton>
                             </Cell>
                         </Row>
                     {/each}
@@ -186,7 +175,6 @@
     :global(.datatable) {
         min-width: 300px;
         max-width: 100%;
-        /* box-shadow: 0 5px 10px 2px #00000030; */
     }
 
     :global(.min) {
